@@ -221,7 +221,8 @@ mod test {
         for nalu in &nalus[3..10] {
             let mut frame_data = vec![0, 0, (nalu.len() / 256) as u8, nalu.len() as u8];
             frame_data.extend_from_slice(nalu);
-            let image_buffer = decompression_session.decode_frame(&frame_data, &format_desc).unwrap();
+            decompression_session.decode_frame(&frame_data, &format_desc).unwrap();
+            let image_buffer = decompression_session.frames().recv().unwrap().unwrap();
             frames_sent += 1;
             compression_session
                 .encode_frame(image_buffer, Time::default(), (), EncodedFrameType::Auto)
