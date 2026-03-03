@@ -14,6 +14,8 @@ fn main() {
             .allowlist_function("CVImageBuffer.+")
             .allowlist_function("CVPixelBuffer.+")
             .allowlist_var("kCVPixelBufferLock_ReadOnly")
+            .allowlist_var("kCVPixelBufferMetalCompatibilityKey")
+            .allowlist_var("kCVPixelBufferIOSurfacePropertiesKey")
             // See: https://github.com/rust-lang/rust-bindgen/issues/1671
             .size_t_is_usize(true)
             .generate()

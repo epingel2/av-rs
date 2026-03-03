@@ -1,5 +1,5 @@
 use super::{sys, ImageBuffer};
-use core_foundation::{result, CFType, OSStatus};
+use core_foundation::{result, Boolean, CFType, MutableDictionary, OSStatus};
 use std::ffi::c_void;
 
 pub struct PixelBuffer(sys::CVPixelBufferRef);
@@ -108,8 +108,58 @@ impl PixelBuffer {
         unsafe { sys::CVPixelBufferUnlockBaseAddress(self.0, sys::kCVPixelBufferLock_ReadOnly as _) };
     }
 
+    pub fn bytes_per_row(&self) -> usize {
+        unsafe { sys::CVPixelBufferGetBytesPerRow(self.0) }
+    }
+
     pub fn data_size(&self) -> usize {
         unsafe { sys::CVPixelBufferGetDataSize(self.0) }
+    }
+
+    /// Allocate a new Metal-compatible, IOSurface-backed pixel buffer.
+    pub fn create(width: u32, height: u32, pixel_format_type: u32) -> Result<Self, OSStatus> {
+        let mut attrs = MutableDictionary::new_cf_type();
+        let iosurface_props = MutableDictionary::new_cf_type();
+        unsafe {
+            attrs.set_value(
+                sys::kCVPixelBufferMetalCompatibilityKey as *const c_void,
+                Boolean::from(true).cf_type_ref() as *const c_void,
+            );
+            attrs.set_value(
+                sys::kCVPixelBufferIOSurfacePropertiesKey as *const c_void,
+                iosurface_props.cf_type_ref() as *const c_void,
+            );
+        }
+
+        let mut ret = std::ptr::null_mut();
+        unsafe {
+            result(
+                sys::CVPixelBufferCreate(
+                    std::ptr::null(),
+                    width as _,
+                    height as _,
+                    pixel_format_type,
+                    attrs.cf_type_ref() as _,
+                    &mut ret as _,
+                )
+                .into(),
+            )?;
+        }
+        Ok(Self(ret))
+    }
+
+    /// Lock the base address for writing (not read-only).
+    pub fn lock_base_address_rw(&self) {
+        unsafe { sys::CVPixelBufferLockBaseAddress(self.0, 0) };
+    }
+
+    /// Unlock the base address after writing.
+    pub fn unlock_base_address_rw(&self) {
+        unsafe { sys::CVPixelBufferUnlockBaseAddress(self.0, 0) };
+    }
+
+    pub fn base_address_mut(&self) -> *mut c_void {
+        unsafe { sys::CVPixelBufferGetBaseAddress(self.0) }
     }
 }
 
