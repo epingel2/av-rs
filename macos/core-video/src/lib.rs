@@ -17,3 +17,8 @@ pub use image_buffer::*;
 
 pub mod pixel_buffer;
 pub use pixel_buffer::*;
+
+#[cfg(feature = "metal")]
+pub mod metal_texture_cache;
+#[cfg(feature = "metal")]
+pub use metal_texture_cache::*;

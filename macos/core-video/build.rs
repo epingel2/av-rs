@@ -5,15 +5,24 @@ fn main() {
         use std::path::PathBuf;
 
         println!("cargo:rustc-link-lib=framework=CoreVideo");
+        if env::var("CARGO_FEATURE_METAL").is_ok() {
+            println!("cargo:rustc-link-lib=framework=Metal");
+        }
 
         let sdk_root = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk";
 
-        let bindings = bindgen::Builder::default()
+        let mut builder = bindgen::Builder::default()
             .clang_arg(format!("-isysroot{}", sdk_root))
             .header("src/lib.hpp")
             .allowlist_function("CVImageBuffer.+")
             .allowlist_function("CVPixelBuffer.+")
-            .allowlist_var("kCVPixelBufferLock_ReadOnly")
+            .allowlist_var("kCVPixelBufferLock_ReadOnly");
+        if env::var("CARGO_FEATURE_METAL").is_ok() {
+            builder = builder
+                .allowlist_type("CVReturn")
+                .allowlist_var("kCVReturnSuccess");
+        }
+        let bindings = builder
             // See: https://github.com/rust-lang/rust-bindgen/issues/1671
             .size_t_is_usize(true)
             .generate()
